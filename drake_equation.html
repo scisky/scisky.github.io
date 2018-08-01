@@ -1,31 +1,54 @@
-<!-- Drake Equation for SciSky fans -->
+<!-- Drake Equation for SciSky viewers -->
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <title>SciSky - Drake Equation</title>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> 
 </head>
 
 <body>
-    <h1>Drake Equation</h1>
+<div class="container-fluid" style="background-color: #222222; padding: 0px;">
 
-    <hr>
+    <nav class="navbar navbar-default navbar-static-top" style="background-color: #000000; border-color: #000000; height: 80px;" >
+    <div class="container-fluid" style="padding: 0px">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle Navigation</span>
+            </button>
+            <a href="./index.html"><img class="nav-item" src="images/SciSky_Logo.png" alt="SciSky_Logo" style="height: 80px; padding: 4px;" /></a>
+        </div>
+        <div id="navbar" class="navbar-collapse navbar" style="border-color: #000000;">
+            <ul class="nav navbar-nav">
+                <!-- Nothing right now -->
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" style="color: white; height: 80px; text-align: center;"> Pages <span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li><a href="./index.html">Home</a></li>
+                        <li><a href="./drake_equation.html">Drake Equation</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+    </nav>
 
-    <form action="https://scisky.github.io/index.html">
-        <input type="submit" value="Home" />
-    </form>
+<div class="container">
+    <h1 style="color: white">Drake Equation</h1>
+    <p style="color: white">Work In Progress...</p>
+</div>
 
-    <hr>
-
-    <br>
-
-    <p>Content</p>
-
+</div>
 </body>
 
 </html>
