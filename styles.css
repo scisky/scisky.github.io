@@ -1,28 +1,49 @@
 ul {
-    background-color: #cccccc;
+    background-color: black;
+    border: 1px dotted black;
+    margin: 0px;
 }
 li img {
     float: left;
-    width: 40px;
-    height: 40px;
+    height: 80px;
+    margin: 0px;
 }
 li a {
     float: right;
-    display: block;
-    color: white;
+    display: inline-block;
     text-align: center;
+    color: white;
     padding: 14px 16px;
     text-decoration: none;
+    background-color: #000000;
+    margin: 0px;
+    top: 0px;
 }
 li a:hover {
-    background-color: #111;
+    background-color: #333333;
+    margin: 0px;
 }
 body {
-    background-color: #ffffff;
+    background-color: #222222;
+    margin: 0px;
 }
 h1 {
     color: blue;
+    margin: 0px;
 }
 p {
     color: white;
+    margin: 0px;
+}
+
+.topnav {
+    overflow: hidden;
+    top: 0px;
+    height: 80px;
+    margin: 0px;
+    background-color: #000000;
+}
+
+.topnav-spacer {
+    height: 40px;
 }
