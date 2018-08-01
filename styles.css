@@ -1,8 +1,25 @@
 ul {
-    background-color: #dddddd;
+    background-color: #cccccc;
+}
+li {
+    float: right;
+}
+li img {
+    width: 40px;
+    height: 40px;
+}
+li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+li a:hover {
+    background-color: #111;
 }
 body {
-    background-color: black;
+    background-color: #ffffff;
 }
 h1 {
     color: blue;
