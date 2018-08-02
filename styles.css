@@ -16,3 +16,17 @@ p {
     color: white;
     text-align: center;
 }
+
+.nav-btn {
+    height: 100px;
+    width: 100%;
+    background-color: #000000;
+    color: white;
+    font-size: 175%;
+    border-radius: 0px;
+}
+
+.nav-btn:hover {
+    color: #ffffff;
+    background-color: #666666;
+}
