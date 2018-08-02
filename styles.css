@@ -28,5 +28,13 @@ p {
 
 .nav-btn:hover {
     color: #ffffff;
-    background-color: #666666;
+    background-color: #444444;
+}
+
+.logo {
+    width: 100px;
+}
+
+.logo:hover {
+    background-color: #444444;
 }
