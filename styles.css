@@ -6,10 +6,12 @@ body {
 
 h1 {
     color: white;
+    font-family: verdana;
 }
 
 p {
     color: white;
+    font-family: verdana;
 }
 
 .nav {
@@ -23,6 +25,7 @@ p {
     background-color: #000000;
     color: white;
     font-size: 175%;
+    font-family: verdana;
     border-radius: 0px;
 }
 
@@ -37,4 +40,12 @@ p {
 
 .logo:hover {
     background-color: #444444;
+}
+
+.page {
+    width: 100%;
+}
+
+.seamless {
+    border: none;
 }
