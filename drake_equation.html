@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="scripts/drake_equation.js"></script>
 </head>
 
 <body>
@@ -37,12 +38,12 @@
     <h1 style="color: white">Drake Equation</h1>
     <br><br>
     
-    <div class="container-fluid" style="color:white;">
-        <h4>The drake equation is a simple mathematical exercise to estimate how many intelligent, communicable civilizations are actively transmitting and receiving signals the Milky Way galaxy right now. Below, you have the opportunity to perform your own estimation of N, the number of such civilizations! Simply modify variables and view the new output calculated with your values.</h4>
+    <div class="container-fluid" style="color:white; padding:0">
+        <h4>The drake equation is a simple mathematical exercise to estimate how many intelligent, communicable civilizations are actively transmitting and receiving signals the Milky Way Galaxy right now. Below, you have the opportunity to perform your own estimation of N, the number of such civilizations! Simply modify variables and view the new output calculated with your values.</h4>
     </div>
     <br>
     
-    <div class="container-fluid">
+    <div class="container-fluid" style="padding:0">
         <div class="row">
             <div class="col-xs-6" style="color:white;">
                 <h2 align="right">Variable</h2>
@@ -54,62 +55,64 @@
             </div>
             <div class="col-xs-6" style="color:white;">
                 <form align="right">
-                    R<sub>*</sub> = <input type="number" style="width:100px; z-index:1;" name="R_star">
+                    N<sub>*</sub> = <input type="number" oninput="calculate()" style="width:120px; color:black;" id="N_star" placeholder=400000000000 value=400000000000>
                 </form>
             </div>
             <div class="col-xs-6" style="color:white;">
-                <p>the average rate of star formation in our galaxy</p><br>
+                <p>The number of Stars in the Milky Way Galaxy.</p><br>
             </div>
             <div class="col-xs-6" style="color:white;">
                 <form align="right">
-                    f<sub>p</sub> = <input type="text" style="width:100px;" name="f_p">
+                    f<sub>p</sub> = <input type="number" oninput="calculate()" style="width:120px; color:black;" id="f_p" placeholder=0.25 value=0.25>
                 </form>
             </div>
             <div class="col-xs-6" style="color:white;">
-                <p>the fraction of those stars that have planets</p><br>
+                <p>The fraction of those stars that have planets.</p><br>
             </div>
             <div class="col-xs-6" style="color:white;">
                 <form align="right">
-                    n<sub>e</sub> = <input type="text" style="width:100px;" name="n_e">
+                    n<sub>e</sub> = <input type="number" oninput="calculate()" style="width:120px; color:black;" id="n_e" placeholder=2 value=2>
                 </form>
             </div>
             <div class="col-xs-6" style="color:white;">
-                <p>the average number of planets that can potentially support life per star that has planets</p><br>
+                <p>The average number of planets that can potentially support life per star that has planets.</p><br>
             </div>
             <div class="col-xs-6" style="color:white;">
                 <form align="right">
-                    f<sub>l</sub> = <input type="text" style="width:100px;" name="f_l">
+                    f<sub>l</sub> = <input type="number" oninput="calculate()" style="width:120px; color:black;" id="f_l" placeholder=0.5 value=0.5>
                 </form>
             </div>
             <div class="col-xs-6" style="color:white;">
-                <p>the fraction of planets that could support life that actually develop life at some point</p><br>
+                <p>The fraction of planets that could support life that actually develop life at some point.</p><br>
             </div>
             <div class="col-xs-6" style="color:white;">
                 <form align="right">
-                    f<sub>i</sub> = <input type="text" style="width:100px;" name="f_i">
+                    f<sub>i</sub> = <input type="number" oninput="calculate()" style="width:120px; color:black;" id="f_i" placeholder=0.1 value=0.1>
                 </form>
             </div>
             <div class="col-xs-6" style="color:white;">
-                <p>the fraction of planets with life that actually go on to develop intelligent life (civilizations)</p><br>
+                <p>The fraction of planets with life that actually go on to develop intelligent life (civilizations).</p><br>
             </div>
             <div class="col-xs-6" style="color:white;">
                 <form align="right">
-                    f<sub>c</sub> = <input type="text" style="width:100px;" name="f_c">
+                    f<sub>c</sub> = <input type="number" oninput="calculate()" style="width:120px; color:black;" id="f_c" placeholder=0.1 value=0.1>
                 </form>
             </div>
             <div class="col-xs-6" style="color:white;">
-                <p>the fraction of civilizations that develop a technology that releases detectable signs of their existence into space</p><br>
+                <p>The fraction of civilizations that develop a technology that releases detectable signs of their existence into space.</p><br>
             </div>
             <div class="col-xs-6" style="color:white;">
                 <form align="right">
-                    L = <input type="text" style="width:100px;" name="L">
+                    L = <input type="number" oninput="calculate()" style="width:120px; color:black;" id="L" placeholder=0.01 value=0.01>
                 </form>
             </div>
             <div class="col-xs-6" style="color:white;">
-                <p>the length of time for which such civilizations release detectable signals into space</p><br><br>
+                <p>the length of time for which such civilizations release detectable signals into space</p><br>
             </div>
             <div class="col-xs-6" style="color:white;">
-                <p align="right" id="N">N = 0</p>
+                <form align="right">
+                    N = <input type="number" style="width:120px; color:black;" id="N" readonly placeholder=100000000000 value=100000000000>
+                </form>
             </div>
             <div class="col-xs-6" style="color:white;">
                 <p>the number of civilizations in our galaxy with which communication might be possible</p><br><br>
