@@ -49,3 +49,7 @@ p {
 .seamless {
     border: none;
 }
+
+.vertical-line{
+    border-right: thick solid #ff0000;
+}
