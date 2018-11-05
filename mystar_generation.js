@@ -60,7 +60,7 @@ constants = {
     SEMI_MAJOR_AXIS_OFFSET: 50.0e9,
     
     SOLAR_LUMINOSITY: 3.846e26,
-    STEFAN_BOLTZMANN_CONSTANT: 5.67e-8,
+    STEFAN_BOLTZMANN_CONSTANT: 5.67e-8
 }
 
 /* *************************************************************************************************************************************************************/
@@ -540,6 +540,7 @@ function generate_planet_colors(planet){
 
 function new_system(sd=(new Date().getTime())){
     seed = sd;
+    document.getElementById('h_seed').innerHTML = 'Seed: ' + seed;
     return generate_system();
 }
 
@@ -552,6 +553,9 @@ var ctx = c.getContext("2d");
 // keep track of the current system
 var system = null;
 
+const SPEED_STAR = 0.0001;
+const SPEED_PLANET = 0.005;
+
 // set frame rate to 30 fps
 setInterval(update, 1000/30);
 
@@ -563,10 +567,12 @@ function update(){
     // clear the screen
     ctx.clearRect(0, 0, c.width, c.height);
 
-    // draw stars near the center
+    // handle the stars
+    move_stars();
     draw_stars();
 
     // draw planets elsewhere
+    move_planets();
     draw_planets();
 }
 
@@ -576,20 +582,8 @@ Draw stars for the global system variable
 */
 function draw_stars(){
     if (system){
-        if (system['stars'].length === 1){
-            draw_star(system['stars'][0]['colors'][0], c.width/2, c.height/2, radius_of(system['stars'][0]));
-        } else if (system['stars'].length === 2){
-            draw_star(system['stars'][0]['colors'][0], c.width/2-15, c.height/2-15, radius_of(system['stars'][0]));
-            draw_star(system['stars'][1]['colors'][0], c.width/2+15, c.height/2+15, radius_of(system['stars'][1]));
-        } else if (system['stars'].length === 3){
-            draw_star(system['stars'][0]['colors'][0], c.width/2-45, c.height/2+15, radius_of(system['stars'][0]));
-            draw_star(system['stars'][1]['colors'][0], c.width/2-15, c.height/2+45, radius_of(system['stars'][1]));
-            draw_star(system['stars'][2]['colors'][0], c.width/2+30, c.height/2-30, radius_of(system['stars'][2]));
-        } else if (system['stars'].length === 4){
-            draw_star(system['stars'][0]['colors'][0], c.width/2-45, c.height/2+15, radius_of(system['stars'][0]));
-            draw_star(system['stars'][1]['colors'][0], c.width/2-15, c.height/2+45, radius_of(system['stars'][1]));
-            draw_star(system['stars'][2]['colors'][0], c.width/2+15, c.height/2-45, radius_of(system['stars'][2]));
-            draw_star(system['stars'][3]['colors'][0], c.width/2+45, c.height/2-15, radius_of(system['stars'][3]));
+        for (let i = 0; i < system['stars'].length; i++){
+            draw_star(system['stars'][i]['colors'][0], system['stars'][i]['x'], system['stars'][i]['y'], radius_of_star(system['stars'][i]));
         }
     }
 }
@@ -612,15 +606,96 @@ function draw_star(color, x, y, r){
 }
 
 /*
+Move the Stars in the system by their velocity and positions
+    @return: void
+*/
+function move_stars(){
+    if (system){
+        let curtime = -(new Date().getTime());
+        let center_x = c.width/2;
+        let center_y = c.height/2;
+        if (system['stars'].length === 1){
+            system['stars'][0]['x'] = center_x;
+            system['stars'][0]['y'] = center_y;
+        } else if (system['stars'].length === 2){
+            system['stars'][0]['x'] = center_x + Math.sin(curtime * SPEED_STAR) * 50;
+            system['stars'][0]['y'] = center_y + Math.cos(curtime * SPEED_STAR) * 50;
+            system['stars'][1]['x'] = center_x - Math.sin(curtime * SPEED_STAR) * 50;
+            system['stars'][1]['y'] = center_y - Math.cos(curtime * SPEED_STAR) * 50;
+            
+            // draw orbital path with grayish color
+            ctx.strokeStyle = '#444444';
+            ctx.beginPath();
+            ctx.arc(c.width/2, c.height/2, 50, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.closePath();
+        } else if (system['stars'].length === 3){
+            system['stars'][0]['x'] = center_x + 70*Math.sin(curtime * SPEED_STAR) + 25*Math.sin(curtime * SPEED_STAR * 4);
+            system['stars'][0]['y'] = center_y + 70*Math.cos(curtime * SPEED_STAR) + 25*Math.cos(curtime * SPEED_STAR * 4);
+            system['stars'][1]['x'] = center_x + 70*Math.sin(curtime * SPEED_STAR) - 25*Math.sin(curtime * SPEED_STAR * 4);
+            system['stars'][1]['y'] = center_y + 70*Math.cos(curtime * SPEED_STAR) - 25*Math.cos(curtime * SPEED_STAR * 4);
+            system['stars'][2]['x'] = center_x - 70*Math.sin(curtime * SPEED_STAR);
+            system['stars'][2]['y'] = center_y - 70*Math.cos(curtime * SPEED_STAR);
+
+            // draw orbital path with grayish color
+            ctx.strokeStyle = '#444444';
+            ctx.beginPath();
+            ctx.arc(c.width/2, c.height/2, 70, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.closePath();
+
+            ctx.beginPath();
+            ctx.arc(c.width/2 + 70*Math.sin(curtime * SPEED_STAR), c.height/2 + 70*Math.cos(curtime * SPEED_STAR), 25, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.closePath();
+        } else if (system['stars'].length === 4){
+            system['stars'][0]['x'] = center_x + 70*Math.sin(curtime * SPEED_STAR) + 25*Math.sin(curtime * SPEED_STAR * 4);
+            system['stars'][0]['y'] = center_y + 70*Math.cos(curtime * SPEED_STAR) + 25*Math.cos(curtime * SPEED_STAR * 4);
+            system['stars'][1]['x'] = center_x + 70*Math.sin(curtime * SPEED_STAR) - 25*Math.sin(curtime * SPEED_STAR * 4);
+            system['stars'][1]['y'] = center_y + 70*Math.cos(curtime * SPEED_STAR) - 25*Math.cos(curtime * SPEED_STAR * 4);
+            system['stars'][2]['x'] = center_x - 70*Math.sin(curtime * SPEED_STAR) + 25*Math.sin(curtime * SPEED_STAR * 4);
+            system['stars'][2]['y'] = center_y - 70*Math.cos(curtime * SPEED_STAR) + 25*Math.cos(curtime * SPEED_STAR * 4);
+            system['stars'][3]['x'] = center_x - 70*Math.sin(curtime * SPEED_STAR) - 25*Math.sin(curtime * SPEED_STAR * 4);
+            system['stars'][3]['y'] = center_y - 70*Math.cos(curtime * SPEED_STAR) - 25*Math.cos(curtime * SPEED_STAR * 4);
+            
+            // draw orbital path with grayish color
+            ctx.strokeStyle = '#444444';
+            ctx.beginPath();
+            ctx.arc(c.width/2, c.height/2, 70, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.closePath();
+            
+            ctx.beginPath();
+            ctx.arc(c.width/2 + 70*Math.sin(curtime * SPEED_STAR), c.height/2 + 70*Math.cos(curtime * SPEED_STAR), 25, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.closePath();
+            
+            ctx.beginPath();
+            ctx.arc(c.width/2 - 70*Math.sin(curtime * SPEED_STAR), c.height/2 - 70*Math.cos(curtime * SPEED_STAR), 25, 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.closePath();
+        }
+    }
+}
+
+/*
 Draw planets for the global system variable
     @return: void
 */
 function draw_planets(){
     if (system){
         for (let i = 0; i < system['planets'].length; i++){
+            // draw orbital path with grayish color
+            ctx.strokeStyle = '#444444';
             ctx.beginPath();
+            ctx.arc(c.width/2, c.height/2, Math.abs(planet_x_by_i(i) - c.width/2), 0, 2*Math.PI);
+            ctx.stroke();
+            ctx.closePath();
+
+            // draw the planet
             ctx.fillStyle = system['planets'][i]['colors'][0];
-            ctx.arc(planet_x_by_i(i), c.height/2, 2, 0, 2*Math.PI);
+            ctx.beginPath();
+            ctx.arc(system['planets'][i]['x'], system['planets'][i]['y'], radius_of_planet(system['planets'][i]), 0, 2*Math.PI);
             ctx.fill();
             ctx.closePath();
         }
@@ -629,11 +704,29 @@ function draw_planets(){
 
 /*
 Return a position for planet at given index. This function is temporary TODO
+    @arg i: int; index of the given planet
     @return: int; position of planet on screen in pixels
 */
 function planet_x_by_i(i){
     // even numbers are on the right side
-    return i % 2 === 0 ? c.width/2 + ((i/2)*25 + 200) : c.width/2 - ((i/2)*25 + 200);
+    return i % 2 === 0 ? c.width/2 + ((i)*25 + 200) : c.width/2 - ((i)*25 + 200);
+}
+
+/*
+Move the planets in the system
+    @return: void
+*/
+function move_planets(){
+    if (system){
+        let curtime = -(new Date().getTime());
+        let center_x = c.width/2;
+        let center_y = c.height/2;
+        for (let i = 0; i < system['planets'].length; i++){
+            let dist = planet_x_by_i(i) - center_x;
+            system['planets'][i]['x'] = center_x + Math.sin(curtime * SPEED_PLANET * (1/Math.abs(dist))) * dist;
+            system['planets'][i]['y'] = center_y + Math.cos(curtime * SPEED_PLANET * (1/Math.abs(dist))) * dist;
+        }
+    }
 }
 
 /*
@@ -641,7 +734,7 @@ Calculate and return radius for a given type of star
     @arg star: dict; describing the target star
     @return: int; radius of star in pixels
 */
-function radius_of(star){
+function radius_of_star(star){
     if (star['type'] == 'Brown Dwarf'){
         return 8;
     } else if (star['type'] === 'Red Dwarf'){
@@ -657,13 +750,44 @@ function radius_of(star){
     } else if (star['type'] === 'Hypergiant'){
         return 20;
     } else /* Neutron Star */ {
+        return 2;
+    }
+}
+
+/*
+Calculate and return radius for a given type of planet
+    @arg planet: dict; describing the target planet
+    @return: int; radius of planet in pixels
+*/
+function radius_of_planet(planet){
+    if (planet['type'] == 'Dwarf'){
+        return 2;
+    } else if (planet['type'] === 'Terrestrial'){
+        return 4;
+    } else /* Gas Giant */ {
         return 6;
     }
 }
 
+/*
+Load a new system! Should be linked to an onclick event.
+    @return: void
+*/
 function load_system(){
     system = new_system();
     document.getElementById('system_name').innerHTML = system['name'];
+    
+    if (system){
+        for (let i = 0; i < system['stars'].length; i++){
+            system['stars'][i]['x'] = -100;
+            system['stars'][i]['y'] = -100;
+        }
+
+        for (let i = 0; i < system['planets'].length; i++){
+            system['planets'][i]['x'] = planet_x_by_i(i);
+            system['planets'][i]['y'] = c.height/2;
+        }
+    }
 }
 
 /* *************************************************************************************************************************************************************/
