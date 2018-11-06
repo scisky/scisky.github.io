@@ -29,6 +29,7 @@ div {
     right: 0;
     width: 30%;
     background-color: #080808;
+    overflow-y: auto;
 }
 
 .centered {
@@ -62,14 +63,14 @@ div {
 }
 
 .info_seed {
-    background-color: #444444;
+    background-color: #222222;
     float: top;
     text-align: center;
     padding: 4px;
 }
 
 .info_generate {
-    background-color: #666666;
+    background-color: #444444;
     float: top;
     text-align: center;
     padding: 1px;
@@ -89,9 +90,14 @@ div {
 }
 
 .btn_new_system {
-    margin-top: 0px;
-    margin-bottom: 10px;
-    padding: 2px;
+    margin: 10px;
+    padding: 4px;
+    border: none;
+    border-radius: 6px;
+    padding: 12px;
+    background-color: #999999;
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .hdr_new_system {
