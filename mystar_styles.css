@@ -1,29 +1,7 @@
 body {
     background-color: black;
     margin: 0;
-}
-
-h1 {
-    color: white;
-}
-
-h2 {
-    color: white;
-    padding: 0;
-    margin: 0;
-}
-
-h4 {
-    color: white;
-    padding: 0;
-    margin: 0;
-}
-
-p {
-    color: white;
-}
-
-input {
+    font-family: 'Courier New', Courier, monospace;
     color: white;
 }
 
@@ -77,20 +55,56 @@ div {
     height: 100%;
 }
 
-.top {
-    width: 100%;
-    position: absolute;
-    top: 32px;
+.info_header {
     background-color: #222222;
-    padding-bottom: 0;
+    text-align: center;
+    padding: 4px;
 }
 
-.middle {
-    padding-top: 50%;
+.info_seed {
+    background-color: #444444;
+    float: top;
+    text-align: center;
+    padding: 4px;
+}
+
+.info_generate {
+    background-color: #666666;
+    float: top;
+    text-align: center;
+    padding: 1px;
+}
+
+.info_field {
+    float: top;
+    text-align: left;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: auto auto auto;
+}
+
+.info_obj {
+    padding: 3px;
+    text-align: center;
+}
+
+.btn_new_system {
+    margin-top: 0px;
+    margin-bottom: 10px;
+    padding: 2px;
+}
+
+.hdr_new_system {
+    padding: 10px;
+    margin: 0px;
 }
 
 #main_canvas {
     width: 100%;
     height: 100%;
     background-color: black;
+}
+
+.system_name {
+    margin: 2px;
 }

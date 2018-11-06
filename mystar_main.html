@@ -13,15 +13,68 @@
 </div>
 <div class="split right">
     <div class="fill">
-        <div class="centered top">
-            <h1 id="system_name">No System.</h1>
+        <div class="info_header">
+            <h1 id="system_name" class="system_name">No System.</h1>
         </div>
-        <div class="centered" style="position: absolute; top: 128px;">
+        <!--
+        <div class="info_seed">
             <h2 id="h_seed">Seed: </h2>
         </div>
-        <div class="centered">
-            <h2>Generate New System!</h2><br>
-            <button id="btn_new_system" onclick="load_system()">Click Here.</button>
+        -->
+        <div class="info_generate">
+            <h4 class="hdr_new_system">Generate New System!</h4>
+            <button class="btn_new_system" class="btn_new_system" onclick="load_system()">Click Here.</button>
+        </div>
+        <div class="info_field">
+            <div class="info_obj">Object:</div>
+            <div class="info_obj" id="info_name"></div>
+            <div class="info_obj"></div>
+            
+            <div class="info_obj">Type:</div>
+            <div class="info_obj" id="info_type"></div>
+            <div class="info_obj"></div>
+
+            <!--
+            <div class="info_obj">Parent:</div>
+            <div class="info_obj" id="info_parent"></div>
+            <div class="info_obj"></div>
+            -->
+
+            <div class="info_obj">Radius:</div>
+            <div class="info_obj" id="info_radius"></div>
+            <div class="info_obj"></div>
+
+            <div class="info_obj">Mass:</div>
+            <div class="info_obj" id="info_mass"></div>
+            <div class="info_obj"></div>
+            
+            <div class="info_obj">Surface Temperature:</div>
+            <div class="info_obj" id="info_temperature"></div>
+            <div class="info_obj"></div>
+            
+            <div class="info_obj">Eccentricity:</div>
+            <div class="info_obj" id="info_eccentricity"></div>
+            <div class="info_obj"></div>
+            
+            <div class="info_obj">Inclination:</div>
+            <div class="info_obj" id="info_inclination"></div>
+            <div class="info_obj"></div>
+            
+            <div class="info_obj">Rotation Period:</div>
+            <div class="info_obj" id="info_rotation_period"></div>
+            <div class="info_obj"></div>
+            
+            <div class="info_obj">Axial Tilt:</div>
+            <div class="info_obj" id="info_axial_tilt"></div>
+            <div class="info_obj"></div>
+            
+            <div class="info_obj">Albedo:</div>
+            <div class="info_obj" id="info_albedo"></div>
+            <div class="info_obj"></div>
+            
+            <div class="info_obj">Surface Pressure:</div>
+            <div class="info_obj" id="info_pressure"></div>
+            <div class="info_obj"></div>
         </div>
     </div>
 </div>

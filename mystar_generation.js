@@ -540,7 +540,7 @@ function generate_planet_colors(planet){
 
 function new_system(sd=(new Date().getTime())){
     seed = sd;
-    document.getElementById('h_seed').innerHTML = 'Seed: ' + seed;
+    //document.getElementById('h_seed').innerHTML = 'Seed: ' + seed;
     return generate_system();
 }
 
@@ -555,9 +555,58 @@ var system = null;
 
 const SPEED_STAR = 0.0001;
 const SPEED_PLANET = 0.005;
+const CLICK_DISTANCE = 20;
+const HIGHLIGHT_RADIUS_PLANET = 1.3;
+const HIGHLIGHT_RADIUS_STAR = 1.2;
 
 // set frame rate to 30 fps
 setInterval(update, 1000/30);
+
+c.addEventListener('click', function(evt) {
+    let rect = c.getBoundingClientRect();
+    let scaleX = c.width / rect.width;    // relationship bitmap vs. element for X
+    let scaleY = c.height / rect.height;  // relationship bitmap vs. element for Y
+    let mousePos = {x: Number.parseInt((evt.clientX - rect.left) * scaleX), y: Number.parseInt((evt.clientY - c.offsetTop) * scaleY)};
+
+    let obj = click_near_object(mousePos.x, mousePos.y);
+    if (obj != null){
+        document.getElementById('info_name').innerHTML = obj['name'];
+        document.getElementById('info_type').innerHTML = obj['type'];
+        //document.getElementById('info_parent').innerHTML = obj['parent'];
+        document.getElementById('info_mass').innerHTML = obj['mass'].toExponential() + ' kilograms';
+        document.getElementById('info_radius').innerHTML = obj['radius'].toExponential() + ' meters';
+        document.getElementById('info_temperature').innerHTML = obj['surface_temperature'] + ' Kelvin';
+        
+        if (obj['type'] === 'Dwarf' || obj['type'] === 'Terrestrial' || obj['type'] === 'Gas Giant'){
+            document.getElementById('info_eccentricity').innerHTML = obj['eccentricity'];
+            document.getElementById('info_inclination').innerHTML = obj['inclination'] + '&deg;';
+            document.getElementById('info_rotation_period').innerHTML = obj['rotation_period'] + ' seconds';
+            document.getElementById('info_axial_tilt').innerHTML = obj['axial_tilt'] + '&deg;';
+            document.getElementById('info_albedo').innerHTML = obj['albedo'];
+            document.getElementById('info_pressure').innerHTML = obj['surface_pressure'].toExponential() + ' kPa';
+        } else {
+            document.getElementById('info_eccentricity').innerHTML = '';
+            document.getElementById('info_inclination').innerHTML = '';
+            document.getElementById('info_rotation_period').innerHTML = '';
+            document.getElementById('info_axial_tilt').innerHTML = '';
+            document.getElementById('info_albedo').innerHTML = '';
+            document.getElementById('info_pressure').innerHTML = '';
+        }
+    } else {
+        document.getElementById('info_name').innerHTML = '';
+        document.getElementById('info_type').innerHTML = '';
+        //document.getElementById('info_parent').innerHTML = obj['parent'];
+        document.getElementById('info_mass').innerHTML = '';
+        document.getElementById('info_radius').innerHTML = '';
+        document.getElementById('info_temperature').innerHTML = '';
+        document.getElementById('info_eccentricity').innerHTML = '';
+        document.getElementById('info_inclination').innerHTML = '';
+        document.getElementById('info_rotation_period').innerHTML = '';
+        document.getElementById('info_axial_tilt').innerHTML = '';
+        document.getElementById('info_albedo').innerHTML = '';
+        document.getElementById('info_pressure').innerHTML = '';
+    }
+}, false);
 
 /*
 Main update function
@@ -583,23 +632,30 @@ Draw stars for the global system variable
 function draw_stars(){
     if (system){
         for (let i = 0; i < system['stars'].length; i++){
-            draw_star(system['stars'][i]['colors'][0], system['stars'][i]['x'], system['stars'][i]['y'], radius_of_star(system['stars'][i]));
+            draw_star(system['stars'][i]);
         }
     }
 }
 
 /*
 Draw stars for the global system variable
-    @arg color: string; 6-digit hex value (Ex. #AB1234) or color mapping (Ex. red) representing star color
-    @arg x: int; center of star, x
-    @arg y: int; center of star, y
-    @arg r: int; radius of star, in pixels
+    @arg star: dict; describes the target star
     @return: void
 */
-function draw_star(color, x, y, r){
-    ctx.fillStyle = color;
+function draw_star(star){
+    // optionally draw highlight
+    if (star['highlighted']){
+        // draw orbital path with grayish color
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(star['x'], star['y'], HIGHLIGHT_RADIUS_STAR*radius_of_star(star), 0, 2*Math.PI);
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    ctx.fillStyle = star['colors'][0];
     ctx.beginPath();
-    ctx.arc(x, y, r, 0, 2*Math.PI);
+    ctx.arc(star['x'], star['y'], radius_of_star(star), 0, 2*Math.PI);
     ctx.fill();
     ctx.closePath();
     ctx.fillStyle = 'white';
@@ -692,6 +748,17 @@ function draw_planets(){
             ctx.stroke();
             ctx.closePath();
 
+            // optionally draw highlight
+            if (system['planets'][i]['highlighted']){
+                let radius = HIGHLIGHT_RADIUS_PLANET*radius_of_planet(system['planets'][i]);
+                radius = radius < 4 ? 4 : radius;
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(system['planets'][i]['x'], system['planets'][i]['y'], radius, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.closePath();
+            }
+
             // draw the planet
             ctx.fillStyle = system['planets'][i]['colors'][0];
             ctx.beginPath();
@@ -781,13 +848,43 @@ function load_system(){
         for (let i = 0; i < system['stars'].length; i++){
             system['stars'][i]['x'] = -100;
             system['stars'][i]['y'] = -100;
+            system['stars'][i]['highlighted'] = false;
         }
 
         for (let i = 0; i < system['planets'].length; i++){
             system['planets'][i]['x'] = planet_x_by_i(i);
             system['planets'][i]['y'] = c.height/2;
+            system['planets'][i]['highlighted'] = false;
         }
     }
+
+    document.getElementById('info_name').innerHTML = '';
+}
+
+function click_near_object(x, y){
+    let obj = null;
+    if (system){
+        for (let i = 0; i < system['stars'].length; i++){
+            system['stars'][i]['highlighted'] = false;
+            if (!obj && distance_to(x, y, system['stars'][i]['x'], system['stars'][i]['y']) < CLICK_DISTANCE){
+                system['stars'][i]['highlighted'] = true;
+                obj = system['stars'][i];
+            }
+        }
+        for (let i = 0; i < system['planets'].length; i++){
+            system['planets'][i]['highlighted'] = false;
+            if (!obj && distance_to(x, y, system['planets'][i]['x'], system['planets'][i]['y']) < CLICK_DISTANCE){
+                system['planets'][i]['highlighted'] = true;
+                obj = system['planets'][i];
+            }
+        }
+    }
+
+    return obj;
+}
+
+function distance_to(x1, y1, x2, y2){
+    return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
 }
 
 /* *************************************************************************************************************************************************************/
