@@ -553,7 +553,12 @@ var ctx = c.getContext("2d");
 // keep track of the current system
 var system = null;
 
+// move around the screen with these variables
 var zoom = 1.0;
+var offset_x = 0;
+var offset_y = 0;
+var track_obj = null;
+var camera_speed = 0.05;
 
 const SPEED_STAR = 0.0001;
 const SPEED_PLANET = 0.005;
@@ -569,6 +574,11 @@ c.addEventListener('click', function(evt) {
     let scaleX = c.width / rect.width;    // relationship bitmap vs. element for X
     let scaleY = c.height / rect.height;  // relationship bitmap vs. element for Y
     let mousePos = {x: Number.parseInt((evt.clientX - rect.left) * scaleX), y: Number.parseInt((evt.clientY - c.offsetTop) * scaleY)};
+
+    if (system){
+        console.log('click at ' + mousePos.x + ', ' + mousePos.y);
+        console.log('planet at ' + system['planets'][0]['x'] + ', ' + system['planets'][0]['y']);
+    }
 
     let obj = click_near_object(mousePos.x, mousePos.y);
     if (obj != null){
@@ -608,6 +618,9 @@ c.addEventListener('click', function(evt) {
         document.getElementById('info_albedo').innerHTML = '';
         document.getElementById('info_pressure').innerHTML = '';
     }
+
+    // set the track object
+    track_obj = obj;
 }, false);
 
 c.addEventListener('mousewheel', function(evt) {
@@ -634,6 +647,21 @@ function update(){
     // draw planets elsewhere
     move_planets();
     draw_planets();
+
+    // move the camera
+    move_camera();
+}
+
+function move_camera(){
+    if (track_obj){
+        if (Math.abs(track_obj['x'] - c.width/2) > 1 || Math.abs(track_obj['y'] - c.height/2) > 1){
+            offset_x -= (track_obj['x'] - c.width/2) * camera_speed;
+            offset_y -= (track_obj['y'] - c.height/2) * camera_speed;
+        }
+    } else {
+        offset_x = Math.abs(offset_x) > 1 ? offset_x * (1-camera_speed) : offset_x;
+        offset_y = Math.abs(offset_y) > 1 ? offset_y * (1-camera_speed) : offset_y;
+    }
 }
 
 /*
@@ -688,8 +716,8 @@ Move the Stars in the system by their velocity and positions
 function move_stars(){
     if (system){
         let curtime = -(new Date().getTime());
-        let center_x = c.width/2;
-        let center_y = c.height/2;
+        let center_x = c.width/2 + offset_x*zoom;
+        let center_y = c.height/2 + offset_y*zoom;
         if (system['stars'].length === 1){
             system['stars'][0]['x'] = center_x;
             system['stars'][0]['y'] = center_y;
@@ -702,7 +730,7 @@ function move_stars(){
             // draw orbital path with grayish color
             ctx.strokeStyle = '#444444';
             ctx.beginPath();
-            ctx.arc(c.width/2, c.height/2, 50 * zoom, 0, 2*Math.PI);
+            ctx.arc(center_x, center_y, 50 * zoom, 0, 2*Math.PI);
             ctx.stroke();
             ctx.closePath();
         } else if (system['stars'].length === 3){
@@ -716,12 +744,12 @@ function move_stars(){
             // draw orbital path with grayish color
             ctx.strokeStyle = '#444444';
             ctx.beginPath();
-            ctx.arc(c.width/2, c.height/2, 70 * zoom, 0, 2*Math.PI);
+            ctx.arc(center_x, center_y, 70 * zoom, 0, 2*Math.PI);
             ctx.stroke();
             ctx.closePath();
 
             ctx.beginPath();
-            ctx.arc(c.width/2 + zoom * (70*Math.sin(curtime * SPEED_STAR)), c.height/2 + zoom * (70*Math.cos(curtime * SPEED_STAR)), 25 * zoom, 0, 2*Math.PI);
+            ctx.arc(center_x + zoom * (70*Math.sin(curtime * SPEED_STAR)), center_y + zoom * (70*Math.cos(curtime * SPEED_STAR)), 25 * zoom, 0, 2*Math.PI);
             ctx.stroke();
             ctx.closePath();
         } else if (system['stars'].length === 4){
@@ -737,17 +765,17 @@ function move_stars(){
             // draw orbital path with grayish color
             ctx.strokeStyle = '#444444';
             ctx.beginPath();
-            ctx.arc(c.width/2, c.height/2, 70 * zoom, 0, 2*Math.PI);
+            ctx.arc(center_x, center_y, 70 * zoom, 0, 2*Math.PI);
             ctx.stroke();
             ctx.closePath();
             
             ctx.beginPath();
-            ctx.arc(c.width/2 + zoom * 70*Math.sin(curtime * SPEED_STAR), c.height/2 + zoom * 70*Math.cos(curtime * SPEED_STAR), 25 * zoom, 0, 2*Math.PI);
+            ctx.arc(center_x + zoom * 70*Math.sin(curtime * SPEED_STAR), center_y + zoom * 70*Math.cos(curtime * SPEED_STAR), 25 * zoom, 0, 2*Math.PI);
             ctx.stroke();
             ctx.closePath();
             
             ctx.beginPath();
-            ctx.arc(c.width/2 - zoom * 70*Math.sin(curtime * SPEED_STAR), c.height/2 - zoom * 70*Math.cos(curtime * SPEED_STAR), 25 * zoom, 0, 2*Math.PI);
+            ctx.arc(center_x - zoom * 70*Math.sin(curtime * SPEED_STAR), center_y - zoom * 70*Math.cos(curtime * SPEED_STAR), 25 * zoom, 0, 2*Math.PI);
             ctx.stroke();
             ctx.closePath();
         }
@@ -760,18 +788,19 @@ Draw planets for the global system variable
 */
 function draw_planets(){
     if (system){
+        let center_x = c.width/2 + offset_x*zoom;
+        let center_y = c.height/2 + offset_y*zoom;
         for (let i = 0; i < system['planets'].length; i++){
             // draw orbital path with grayish color
             ctx.strokeStyle = '#444444';
             ctx.beginPath();
-            ctx.arc(c.width/2, c.height/2, Math.abs(planet_x_by_i(i) - c.width/2) * zoom, 0, 2*Math.PI);
+            ctx.arc(center_x, center_y, Math.abs(planet_x_by_i(i) - c.width/2) * zoom, 0, 2*Math.PI);
             ctx.stroke();
             ctx.closePath();
 
             // optionally draw highlight
             if (system['planets'][i]['highlighted']){
                 let radius = HIGHLIGHT_RADIUS_PLANET*radius_of_planet(system['planets'][i]);
-                radius = radius < 4 ? 4 : radius;
                 ctx.fillStyle = 'white';
                 ctx.beginPath();
                 ctx.arc(system['planets'][i]['x'], system['planets'][i]['y'], radius * zoom, 0, 2*Math.PI);
@@ -815,10 +844,10 @@ Move the planets in the system
 function move_planets(){
     if (system){
         let curtime = -(new Date().getTime());
-        let center_x = c.width/2;
-        let center_y = c.height/2;
+        let center_x = c.width/2 + offset_x*zoom;
+        let center_y = c.height/2 + offset_y*zoom;
         for (let i = 0; i < system['planets'].length; i++){
-            let dist = planet_x_by_i(i) - center_x;
+            let dist = planet_x_by_i(i) - c.width/2;
             system['planets'][i]['x'] = center_x + Math.sin(curtime * SPEED_PLANET * (1/Math.abs(dist))) * dist * zoom;
             system['planets'][i]['y'] = center_y + Math.cos(curtime * SPEED_PLANET * (1/Math.abs(dist))) * dist * zoom;
         }
