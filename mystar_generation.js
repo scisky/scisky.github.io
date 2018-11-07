@@ -306,8 +306,11 @@ Generates colors of a Star, given the type
     @return: list; of colors describing the Star
 */
 function generate_star_colors(star){
-    // fetch the predefined possible colors
-    let temp = constants.STAR_COLORS[star['type']];
+    // fetch the predefined possible colors and make a deep copy
+    let temp = [];
+    for (let i = 0; i < constants.STAR_COLORS[star['type']].length; i++){
+        temp.push(constants.STAR_COLORS[star['type']][i]);
+    }
     
     // remove wrong colors if giant type
     if (star['type'] === 'Main Sequence High Mass' || star['type'] === 'Giant' || star['type'] === 'Supergiant' || star['type'] === 'Hypergiant'){
@@ -538,6 +541,11 @@ function generate_planet_colors(planet){
 /* BEGIN DRAWING ***********************************************************************************************************************************************/
 /* *************************************************************************************************************************************************************/
 
+/*
+Function that sets the seed and returns the generated system
+    @arg: sd: int; (optional) sets the seed
+    @return: void
+*/
 function new_system(sd=(new Date().getTime())){
     seed = sd;
     //document.getElementById('h_seed').innerHTML = 'Seed: ' + seed;
@@ -558,27 +566,61 @@ var zoom = 1.0;
 var offset_x = 0;
 var offset_y = 0;
 var track_obj = null;
-var camera_speed = 0.05;
+var mouse_down = false;
+var mouse_down_pos = {x: 0, y: 0};
+var camera_move_amt = {x: 0, y: 0};
 
 const SPEED_STAR = 0.0001;
 const SPEED_PLANET = 0.005;
 const CLICK_DISTANCE = 20;
 const HIGHLIGHT_RADIUS_PLANET = 1.3;
 const HIGHLIGHT_RADIUS_STAR = 1.2;
+const CAMERA_SPEED = 0.1;
+const FILL_ALPHA = 0.4;
 
 // set frame rate to 30 fps
 setInterval(update, 1000/30);
 
-c.addEventListener('click', function(evt) {
+c.addEventListener('mousedown', function(evt) {
+    mouse_down = true;
+    if (track_obj && track_obj != 'home'){
+        track_obj['highlighted'] = false;
+        clearinfo();
+    }
+
+    let rect = c.getBoundingClientRect();
+    let scaleX = c.width / rect.width;    // relationship bitmap vs. element for X
+    let scaleY = c.height / rect.height;  // relationship bitmap vs. element for Y
+    mouse_down_pos.x = Number.parseInt((evt.clientX - rect.left) * scaleX);
+    mouse_down_pos.y = Number.parseInt((evt.clientY - c.offsetTop) * scaleY);
+}, false);
+
+c.addEventListener('mousemove', function(evt){
+    if (mouse_down){
+        let rect = c.getBoundingClientRect();
+        let scaleX = c.width / rect.width;    // relationship bitmap vs. element for X
+        let scaleY = c.height / rect.height;  // relationship bitmap vs. element for Y
+        newx = Number.parseInt((evt.clientX - rect.left) * scaleX);
+        newy = Number.parseInt((evt.clientY - c.offsetTop) * scaleY);
+
+        camera_move_amt.x = (newx - mouse_down_pos.x) / zoom;
+        camera_move_amt.y = (newy - mouse_down_pos.y) / zoom;
+
+        offset_x += camera_move_amt.x;
+        offset_y += camera_move_amt.y;
+
+        mouse_down_pos.x = newx;
+        mouse_down_pos.y = newy;
+    }
+    
+}, false);
+
+c.addEventListener('mouseup', function(evt) {
     let rect = c.getBoundingClientRect();
     let scaleX = c.width / rect.width;    // relationship bitmap vs. element for X
     let scaleY = c.height / rect.height;  // relationship bitmap vs. element for Y
     let mousePos = {x: Number.parseInt((evt.clientX - rect.left) * scaleX), y: Number.parseInt((evt.clientY - c.offsetTop) * scaleY)};
-
-    if (system){
-        console.log('click at ' + mousePos.x + ', ' + mousePos.y);
-        console.log('planet at ' + system['planets'][0]['x'] + ', ' + system['planets'][0]['y']);
-    }
+    mouse_down = false;
 
     let obj = click_near_object(mousePos.x, mousePos.y);
     if (obj != null){
@@ -605,18 +647,7 @@ c.addEventListener('click', function(evt) {
             document.getElementById('info_pressure').innerHTML = '';
         }
     } else {
-        document.getElementById('info_name').innerHTML = '';
-        document.getElementById('info_type').innerHTML = '';
-        //document.getElementById('info_parent').innerHTML = obj['parent'];
-        document.getElementById('info_mass').innerHTML = '';
-        document.getElementById('info_radius').innerHTML = '';
-        document.getElementById('info_temperature').innerHTML = '';
-        document.getElementById('info_eccentricity').innerHTML = '';
-        document.getElementById('info_inclination').innerHTML = '';
-        document.getElementById('info_rotation_period').innerHTML = '';
-        document.getElementById('info_axial_tilt').innerHTML = '';
-        document.getElementById('info_albedo').innerHTML = '';
-        document.getElementById('info_pressure').innerHTML = '';
+        clearinfo();
     }
 
     // set the track object
@@ -631,6 +662,54 @@ c.addEventListener('mousewheel', function(evt) {
         zoom *= 1.1;
     }
 }, false);
+
+document.body.onkeyup = function(e){
+    if (e.keyCode == 32){
+        if (track_obj && track_obj != 'home'){
+            track_obj['highlighted'] = false;
+            clearinfo();
+        }
+
+        track_obj = 'home';
+    }
+}
+
+/*
+Determines what happens when the mouse button is released (may happen anywhere)
+    @return: void
+*/
+function mouseup(){
+    mouse_down = false;
+}
+
+/*
+Removes the tracked object so that the camera returns home
+    @arg: sd: int; (optional) sets the seed
+    @return: void
+*/
+function gohome(){
+    mouseup();
+    track_obj = 'home';
+}
+
+/*
+Clears all fields in the righthand info pane
+    @return: void
+*/
+function clearinfo(){
+    document.getElementById('info_name').innerHTML = '';
+    document.getElementById('info_type').innerHTML = '';
+    //document.getElementById('info_parent').innerHTML = '';
+    document.getElementById('info_mass').innerHTML = '';
+    document.getElementById('info_radius').innerHTML = '';
+    document.getElementById('info_temperature').innerHTML = '';
+    document.getElementById('info_eccentricity').innerHTML = '';
+    document.getElementById('info_inclination').innerHTML = '';
+    document.getElementById('info_rotation_period').innerHTML = '';
+    document.getElementById('info_axial_tilt').innerHTML = '';
+    document.getElementById('info_albedo').innerHTML = '';
+    document.getElementById('info_pressure').innerHTML = '';
+}
 
 /*
 Main update function
@@ -652,15 +731,28 @@ function update(){
     move_camera();
 }
 
+/*
+Move the camera towards the currently tracked object
+    @return: void
+*/
 function move_camera(){
-    if (track_obj){
-        if (Math.abs(track_obj['x'] - c.width/2) > 1 || Math.abs(track_obj['y'] - c.height/2) > 1){
-            offset_x -= (track_obj['x'] - c.width/2) * camera_speed;
-            offset_y -= (track_obj['y'] - c.height/2) * camera_speed;
+    if (!mouse_down){
+        if (track_obj){
+            if (track_obj === 'home'){
+                // code that moves camera to center
+                offset_x = Math.abs(offset_x) > 1 ? offset_x * (1-CAMERA_SPEED) : offset_x;
+                offset_y = Math.abs(offset_y) > 1 ? offset_y * (1-CAMERA_SPEED) : offset_y;
+            } else if (Math.abs(track_obj['x'] - c.width/2) > 1 || Math.abs(track_obj['y'] - c.height/2) > 1){
+                offset_x -= (track_obj['x'] - c.width/2) * CAMERA_SPEED/zoom;
+                offset_y -= (track_obj['y'] - c.height/2) * CAMERA_SPEED/zoom;
+            }
+        } else {
+            // code that slowly stops moving camera
+            camera_move_amt.x = Math.abs(camera_move_amt.x) > 0.1 ? camera_move_amt.x * CAMERA_SPEED*8 : 0;
+            camera_move_amt.y = Math.abs(camera_move_amt.y) > 0.1 ? camera_move_amt.y * CAMERA_SPEED*8 : 0;
+            offset_x = Math.abs(offset_x) > 1 ? offset_x + camera_move_amt.x : offset_x;
+            offset_y = Math.abs(offset_y) > 1 ? offset_y + camera_move_amt.y : offset_y;
         }
-    } else {
-        offset_x = Math.abs(offset_x) > 1 ? offset_x * (1-camera_speed) : offset_x;
-        offset_y = Math.abs(offset_y) > 1 ? offset_y * (1-camera_speed) : offset_y;
     }
 }
 
@@ -701,12 +793,28 @@ function draw_star(star){
         ctx.closePath();
     }
 
-    ctx.fillStyle = star['colors'][0];
-    ctx.beginPath();
-    ctx.arc(star['x'], star['y'], radius_of_star(star) * zoom, 0, 2*Math.PI);
-    ctx.fill();
-    ctx.closePath();
-    ctx.fillStyle = 'white';
+    // draw the planet
+    let img = new Image();
+    // load image for different types
+    if (star['type'] === 'Red Dwarf'){
+        img.src = 'gfx/star_reddwarf.gif';
+    } else if (star['type'] === 'Brown Dwarf'){
+        img.src = 'gfx/star_browndwarf.gif';
+    } else if (star['type'] === 'Neutron'){
+        img.src = 'gfx/star_neutron.gif';
+    } else if (star['colors'][0] === 'red'){
+        img.src = 'gfx/star_redgiant.gif';
+    } else if (star['colors'][0] === 'blue'){
+        img.src = 'gfx/star_bluegiant.gif';
+    } else if (star['colors'][0] === 'yellow'){
+        img.src = 'gfx/star_yellow.gif';
+    } else {
+        console.log(star['colors']);
+    }
+    
+    // draw the image
+    let rad = radius_of_star(star)*zoom;
+    ctx.drawImage(img, star['x'] - rad, star['y'] - rad, 2*rad, 2*rad);
 }
 
 /*
@@ -818,11 +926,27 @@ function draw_planets(){
             }
 
             // draw the planet
+            let img = new Image();
+            // load image for different types
+            if (system['planets'][i]['type'] === 'Dwarf'){
+                img.src = 'gfx/planet_dwarf.gif';
+            } else if (system['planets'][i]['type'] === 'Terrestrial'){
+                img.src = 'gfx/planet_terrestrial.gif';
+            } else {
+                img.src = 'gfx/planet_gasgiant.gif';
+            }
+            // draw the image
+            let rad = radius_of_planet(system['planets'][i])*zoom;
+            ctx.drawImage(img, system['planets'][i]['x'] - rad, system['planets'][i]['y'] - rad, 2*rad, 2*rad);
+
+            // to tint, draw a circle over the planet with lower fill alpha
+            ctx.globalAlpha = FILL_ALPHA;
             ctx.fillStyle = system['planets'][i]['colors'][0];
             ctx.beginPath();
-            ctx.arc(system['planets'][i]['x'], system['planets'][i]['y'], radius_of_planet(system['planets'][i]) * zoom, 0, 2*Math.PI);
+            ctx.arc(system['planets'][i]['x'], system['planets'][i]['y'], rad, 0, 2*Math.PI);
             ctx.fill();
             ctx.closePath();
+            ctx.globalAlpha = 1.0;
         }
     }
 }
@@ -901,6 +1025,7 @@ Load a new system! Should be linked to an onclick event.
 function load_system(){
     system = new_system();
     document.getElementById('system_name').innerHTML = system['name'];
+    document.getElementById('system_name').style.color = system['stars'][0]['colors'][0];
     
     if (system){
         for (let i = 0; i < system['stars'].length; i++){
@@ -919,6 +1044,12 @@ function load_system(){
     document.getElementById('info_name').innerHTML = '';
 }
 
+/*
+Check if given click coordinates are near an object and return it
+    @arg x: int; click x coordinate
+    @arg y: int; click y coordinate
+    @return: dict; describing the target object that was clicked
+*/
 function click_near_object(x, y){
     let obj = null;
     if (system){
@@ -941,6 +1072,14 @@ function click_near_object(x, y){
     return obj;
 }
 
+/*
+Find the vector distance between 2 points
+    @arg x1: int; point x1
+    @arg y1: int; point y1
+    @arg x2: int; point x2
+    @arg y2: int; point y2
+    @return: float; distance between the two points
+*/
 function distance_to(x1, y1, x2, y2){
     return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
 }
