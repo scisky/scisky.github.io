@@ -549,13 +549,14 @@ Function that sets the seed and returns the generated system
 function new_system(sd=(new Date().getTime())){
     seed = sd;
     //document.getElementById('h_seed').innerHTML = 'Seed: ' + seed;
+
     return generate_system();
 }
 
 // grab the canvas from the html document and set things for it
 var c = document.getElementById("main_canvas");
 c.width = 1280;
-c.height = 973;
+c.height = 920;
 var ctx = c.getContext("2d");
 
 // keep track of the current system
@@ -578,15 +579,31 @@ const HIGHLIGHT_RADIUS_STAR = 1.2;
 const CAMERA_SPEED = 0.1;
 const FILL_ALPHA = 0.4;
 
+const MAX_ZOOM = 100;
+const MIN_ZOOM = 0.025;
+
+const OBJ_SIZE_COEFFICIENT = 14 / 695.508e6;
+
+const img_background   = new Image(); img_background.src   = 'gfx/background.jpg';
+const img_planet_dwarf = new Image(); img_planet_dwarf.src = 'gfx/planet_dwarf.gif';
+const img_planet_terr  = new Image(); img_planet_terr.src  = 'gfx/planet_terrestrial.gif';
+const img_planet_gasg  = new Image(); img_planet_gasg.src  = 'gfx/planet_gasgiant.gif';
+const img_star_brownd  = new Image(); img_star_brownd.src  = 'gfx/star_browndwarf.gif';
+const img_star_redd    = new Image(); img_star_redd.src    = 'gfx/star_reddwarf.gif';
+const img_star_neutron = new Image(); img_star_neutron.src = 'gfx/star_neutron.gif';
+const img_star_redg    = new Image(); img_star_redg.src    = 'gfx/star_redgiant.gif';
+const img_star_blueg   = new Image(); img_star_blueg.src   = 'gfx/star_bluegiant.gif';
+const img_star_yellow  = new Image(); img_star_yellow.src  = 'gfx/star_yellow.gif';
+
+const ORBIT_COLOR = '#222222';
+const RED_COLOR = '#FF2B32';
+const BLUE_COLOR = '#3564FF';
+
 // set frame rate to 30 fps
 setInterval(update, 1000/30);
 
 c.addEventListener('mousedown', function(evt) {
     mouse_down = true;
-    if (track_obj && track_obj != 'home'){
-        track_obj['highlighted'] = false;
-        clearinfo();
-    }
 
     let rect = c.getBoundingClientRect();
     let scaleX = c.width / rect.width;    // relationship bitmap vs. element for X
@@ -655,22 +672,33 @@ c.addEventListener('mouseup', function(evt) {
 }, false);
 
 c.addEventListener('mousewheel', function(evt) {
+    if (track_obj === 'home'){
+        track_obj = null;
+    }
     var delta = Math.max(-1, Math.min(1, (evt.wheelDelta || -evt.detail)));
     if (delta < 0){
-        zoom *= 0.9;
+        zoom = zoom > MIN_ZOOM ? zoom * 0.9 : MIN_ZOOM;
     } else {
-        zoom *= 1.1;
+        zoom = zoom < MAX_ZOOM ? zoom * 1.1 : MAX_ZOOM;
     }
 }, false);
 
 document.body.onkeyup = function(e){
-    if (e.keyCode == 32){
+    // if 'c' is pressed, center the camera
+    if (e.keyCode === 67){
         if (track_obj && track_obj != 'home'){
             track_obj['highlighted'] = false;
             clearinfo();
         }
-
         track_obj = 'home';
+    // if 'n' is pressed, generate a new system
+    } else if (e.keyCode === 78){
+        if (track_obj && track_obj != 'home'){
+            track_obj['highlighted'] = false;
+            clearinfo();
+        }
+        track_obj = 'home';
+        load_system();
     }
 }
 
@@ -688,7 +716,11 @@ Removes the tracked object so that the camera returns home
     @return: void
 */
 function gohome(){
-    mouseup();
+    mouse_down = false;
+    clearinfo();
+    if (track_obj && track_obj != 'home'){
+        track_obj['highlighted'] = false;
+    }
     track_obj = 'home';
 }
 
@@ -719,6 +751,9 @@ function update(){
     // clear the screen
     ctx.clearRect(0, 0, c.width, c.height);
 
+    // draw background
+    draw_background();
+
     // handle the stars
     move_stars();
     draw_stars();
@@ -731,6 +766,10 @@ function update(){
     move_camera();
 }
 
+function draw_background(){
+    ctx.drawImage(img_background, 0, 0, c.width, c.height);
+}
+
 /*
 Move the camera towards the currently tracked object
     @return: void
@@ -740,11 +779,19 @@ function move_camera(){
         if (track_obj){
             if (track_obj === 'home'){
                 // code that moves camera to center
-                offset_x = Math.abs(offset_x) > 1 ? offset_x * (1-CAMERA_SPEED) : offset_x;
-                offset_y = Math.abs(offset_y) > 1 ? offset_y * (1-CAMERA_SPEED) : offset_y;
-            } else if (Math.abs(track_obj['x'] - c.width/2) > 1 || Math.abs(track_obj['y'] - c.height/2) > 1){
-                offset_x -= (track_obj['x'] - c.width/2) * CAMERA_SPEED/zoom;
-                offset_y -= (track_obj['y'] - c.height/2) * CAMERA_SPEED/zoom;
+                offset_x = Math.abs(offset_x) > 0.1 ? offset_x * (1-CAMERA_SPEED) : 0;
+                offset_y = Math.abs(offset_y) > 0.1 ? offset_y * (1-CAMERA_SPEED) : 0;
+                if (zoom > 1.1){
+                    zoom *= (1-CAMERA_SPEED);
+                } else if (zoom < 0.9){
+                    let diff = 1/zoom;
+                    zoom *= (1+CAMERA_SPEED);
+                } else {
+                    zoom = 1.0;
+                }
+            } else if (Math.abs(track_obj['x'] - c.width/2) > 0.1 || Math.abs(track_obj['y'] - c.height/2) > 0.1){
+                offset_x -= (track_obj['x'] - c.width/2) * CAMERA_SPEED/(Math.sqrt(zoom));
+                offset_y -= (track_obj['y'] - c.height/2) * CAMERA_SPEED/(Math.sqrt(zoom));
             }
         } else {
             // code that slowly stops moving camera
@@ -794,27 +841,21 @@ function draw_star(star){
     }
 
     // draw the planet
-    let img = new Image();
+    let rad = radius_of_star(star)*zoom;
     // load image for different types
     if (star['type'] === 'Red Dwarf'){
-        img.src = 'gfx/star_reddwarf.gif';
+        ctx.drawImage(img_star_redd, star['x'] - rad, star['y'] - rad, 2*rad, 2*rad);
     } else if (star['type'] === 'Brown Dwarf'){
-        img.src = 'gfx/star_browndwarf.gif';
+        ctx.drawImage(img_star_brownd, star['x'] - rad, star['y'] - rad, 2*rad, 2*rad);
     } else if (star['type'] === 'Neutron'){
-        img.src = 'gfx/star_neutron.gif';
+        ctx.drawImage(img_star_neutron, star['x'] - rad, star['y'] - rad, 2*rad, 2*rad);
     } else if (star['colors'][0] === 'red'){
-        img.src = 'gfx/star_redgiant.gif';
+        ctx.drawImage(img_star_redg, star['x'] - rad, star['y'] - rad, 2*rad, 2*rad);
     } else if (star['colors'][0] === 'blue'){
-        img.src = 'gfx/star_bluegiant.gif';
+        ctx.drawImage(img_star_blueg, star['x'] - rad, star['y'] - rad, 2*rad, 2*rad);
     } else if (star['colors'][0] === 'yellow'){
-        img.src = 'gfx/star_yellow.gif';
-    } else {
-        console.log(star['colors']);
+        ctx.drawImage(img_star_yellow, star['x'] - rad, star['y'] - rad, 2*rad, 2*rad);
     }
-    
-    // draw the image
-    let rad = radius_of_star(star)*zoom;
-    ctx.drawImage(img, star['x'] - rad, star['y'] - rad, 2*rad, 2*rad);
 }
 
 /*
@@ -836,7 +877,7 @@ function move_stars(){
             system['stars'][1]['y'] = center_y - Math.cos(curtime * SPEED_STAR) * 50 * zoom;
             
             // draw orbital path with grayish color
-            ctx.strokeStyle = '#444444';
+            ctx.strokeStyle = ORBIT_COLOR;
             ctx.beginPath();
             ctx.arc(center_x, center_y, 50 * zoom, 0, 2*Math.PI);
             ctx.stroke();
@@ -850,7 +891,7 @@ function move_stars(){
             system['stars'][2]['y'] = center_y - zoom * (70*Math.cos(curtime * SPEED_STAR));
 
             // draw orbital path with grayish color
-            ctx.strokeStyle = '#444444';
+            ctx.strokeStyle = ORBIT_COLOR;
             ctx.beginPath();
             ctx.arc(center_x, center_y, 70 * zoom, 0, 2*Math.PI);
             ctx.stroke();
@@ -871,7 +912,7 @@ function move_stars(){
             system['stars'][3]['y'] = center_y - zoom * (70*Math.cos(curtime * SPEED_STAR) - 25*Math.cos(curtime * SPEED_STAR * 4));
             
             // draw orbital path with grayish color
-            ctx.strokeStyle = '#444444';
+            ctx.strokeStyle = ORBIT_COLOR;
             ctx.beginPath();
             ctx.arc(center_x, center_y, 70 * zoom, 0, 2*Math.PI);
             ctx.stroke();
@@ -900,7 +941,7 @@ function draw_planets(){
         let center_y = c.height/2 + offset_y*zoom;
         for (let i = 0; i < system['planets'].length; i++){
             // draw orbital path with grayish color
-            ctx.strokeStyle = '#444444';
+            ctx.strokeStyle = ORBIT_COLOR;
             ctx.beginPath();
             ctx.arc(center_x, center_y, Math.abs(planet_x_by_i(i) - c.width/2) * zoom, 0, 2*Math.PI);
             ctx.stroke();
@@ -926,18 +967,15 @@ function draw_planets(){
             }
 
             // draw the planet
-            let img = new Image();
+            let rad = radius_of_planet(system['planets'][i])*zoom;
             // load image for different types
             if (system['planets'][i]['type'] === 'Dwarf'){
-                img.src = 'gfx/planet_dwarf.gif';
+                ctx.drawImage(img_planet_dwarf, system['planets'][i]['x'] - rad, system['planets'][i]['y'] - rad, 2*rad, 2*rad);
             } else if (system['planets'][i]['type'] === 'Terrestrial'){
-                img.src = 'gfx/planet_terrestrial.gif';
+                ctx.drawImage(img_planet_terr, system['planets'][i]['x'] - rad, system['planets'][i]['y'] - rad, 2*rad, 2*rad);
             } else {
-                img.src = 'gfx/planet_gasgiant.gif';
+                ctx.drawImage(img_planet_gasg, system['planets'][i]['x'] - rad, system['planets'][i]['y'] - rad, 2*rad, 2*rad);
             }
-            // draw the image
-            let rad = radius_of_planet(system['planets'][i])*zoom;
-            ctx.drawImage(img, system['planets'][i]['x'] - rad, system['planets'][i]['y'] - rad, 2*rad, 2*rad);
 
             // to tint, draw a circle over the planet with lower fill alpha
             ctx.globalAlpha = FILL_ALPHA;
@@ -984,6 +1022,8 @@ Calculate and return radius for a given type of star
     @return: int; radius of star in pixels
 */
 function radius_of_star(star){
+    //return star['radius'] * OBJ_SIZE_COEFFICIENT;
+
     if (star['type'] == 'Brown Dwarf'){
         return 8;
     } else if (star['type'] === 'Red Dwarf'){
@@ -1009,6 +1049,8 @@ Calculate and return radius for a given type of planet
     @return: int; radius of planet in pixels
 */
 function radius_of_planet(planet){
+    //return planet['radius'] * OBJ_SIZE_COEFFICIENT;
+
     if (planet['type'] == 'Dwarf'){
         return 2;
     } else if (planet['type'] === 'Terrestrial'){
@@ -1018,6 +1060,16 @@ function radius_of_planet(planet){
     }
 }
 
+function color_to_theme_color(color){
+    if (color === 'blue'){
+        return BLUE_COLOR;
+    } else if (color === 'red'){
+        return RED_COLOR;
+    }
+
+    return color;
+}
+
 /*
 Load a new system! Should be linked to an onclick event.
     @return: void
@@ -1025,7 +1077,7 @@ Load a new system! Should be linked to an onclick event.
 function load_system(){
     system = new_system();
     document.getElementById('system_name').innerHTML = system['name'];
-    document.getElementById('system_name').style.color = system['stars'][0]['colors'][0];
+    document.getElementById('system_name').style.color = color_to_theme_color(system['stars'][0]['colors'][0]);
     
     if (system){
         for (let i = 0; i < system['stars'].length; i++){
@@ -1055,14 +1107,14 @@ function click_near_object(x, y){
     if (system){
         for (let i = 0; i < system['stars'].length; i++){
             system['stars'][i]['highlighted'] = false;
-            if (!obj && distance_to(x, y, system['stars'][i]['x'], system['stars'][i]['y']) < CLICK_DISTANCE * zoom){
+            if (!obj && distance_to(x, y, system['stars'][i]['x'], system['stars'][i]['y']) < CLICK_DISTANCE * Math.sqrt(zoom)){
                 system['stars'][i]['highlighted'] = true;
                 obj = system['stars'][i];
             }
         }
         for (let i = 0; i < system['planets'].length; i++){
             system['planets'][i]['highlighted'] = false;
-            if (!obj && distance_to(x, y, system['planets'][i]['x'], system['planets'][i]['y']) < CLICK_DISTANCE * zoom){
+            if (!obj && distance_to(x, y, system['planets'][i]['x'], system['planets'][i]['y']) < CLICK_DISTANCE * Math.sqrt(zoom)){
                 system['planets'][i]['highlighted'] = true;
                 obj = system['planets'][i];
             }
