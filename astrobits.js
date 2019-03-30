@@ -601,7 +601,7 @@ canvas.addEventListener("mouseup", function(evt)
     lmousedown = false;
 
     // If the release was in the button zone.
-    if (evt.x < 100 && evt.y < 220)
+    if (evt.x < 100 && evt.y < 260)
     {
         return;
     }
