@@ -32,9 +32,9 @@ const SUN_MASS = 100000; // Mass of initial Sun - similar to Sol (Sun)
 const METEOR_MASS = 1; // Similar to the mass of Pluto
 const PLANET_MASS = 100; // Similar to the mass of Earth
 const GASGIANT_MASS = 1000; // Similar to the mass of Jupiter
-const CLICKVELFACTOR = 1/1000; // Controls how much velocity when spawning
+const CLICKVELFACTOR = 1/1400; // Controls how much velocity when spawning
 
-const METEOR_MAXPTS = 150;
+const METEOR_MAXPTS = 130;
 const METEOR_STARTDISTANCE = 200;
 const METEOR_STARTXVEL = -0.07;
 const METEOR_STARTYVEL = 0.0;
@@ -43,15 +43,25 @@ const METEOR_COLOR = "#8B4513";
 const PLANET_COLOR = "#0066cc";
 const GASGIANT_COLOR = "#66cc00";
 const SUN_COLOR = "#E6DF52";
+const TRAIL_ALPHA = 0.4;
 
 const ACTIVE_COLOR = "#666666";
 const INACTIVE_COLOR = "#444444";
+
+const MENU_WIDTH = 100;
+const MENU_HEIGHT = 260;
 
 const PADDINGX = 10;
 const PADDINGY = 10;
 
 const MIN_ZOOM = 0.05;
 const MAX_ZOOM = 12.0;
+
+const MAX_PTS = 8;
+const MAX_DISTANCE = 12000;
+
+const BTN_WIDTH = 60;
+const BTN_HEIGHT = 40;
 
 /* ***************************************************************************/
 /* END CONSTANTS *************************************************************/
@@ -77,9 +87,18 @@ class Body
         this.radius = 0;
         this.color = c;
         this.dynamic = d; // Should this body be affected by gravity?
+        this.dying = false;
         this.id = id; // Equivalent to address in "bodies" array.
 
         this.eat(m); // Calculate radius based on mass.
+        
+        // pts is an array of the past locations of this body.
+        this.pts = [ [x, y] ];
+        // pts_freq is how many ticks pass before saving a point.
+        this.pts_freq = 2;
+        this.pts_trck = 0;
+        // pts_maxn is the max number of points to hold.
+        this.pts_maxn = METEOR_MAXPTS;
     }
     
     /**
@@ -89,10 +108,35 @@ class Body
     */
     draw(ct)
     {
+        // Make the pts trail the same color as the object.
+        if (this.pts.length > 0)
+        {
+            ct.globalAlpha = TRAIL_ALPHA;
+            ct.strokeStyle = this.color;
+                center_x + (this.x + offset.x - center_x) * zoom
+                center_y + (this.y + offset.y - center_y) * zoom
+            ct.moveTo(center_x + (this.pts[0][0] + offset.x - center_x) * zoom,
+                    center_y + (this.pts[0][1] + offset.y - center_y) * zoom);
+            ct.beginPath();
+
+            // Loop through all points, drawing short lines.
+            for (var i = 0; i < this.pts.length; i++){
+                ct.lineTo(center_x + (this.pts[i][0] + offset.x - center_x) * zoom,
+                        center_y + (this.pts[i][1] + offset.y - center_y) * zoom);
+                ct.moveTo(center_x + (this.pts[i][0] + offset.x - center_x) * zoom,
+                        center_y + (this.pts[i][1] + offset.y - center_y) * zoom);
+            }
+            ct.lineTo(center_x + (this.x + offset.x - center_x) * zoom,
+                    center_y + (this.y + offset.y - center_y) * zoom);
+            ct.stroke();
+            ct.closePath();
+            ct.globalAlpha = 1.0;
+        }
+
         // Don't draw if it is too small. You won't see it!
         if (this.radius >= 1){
-            ct.beginPath();
             ct.fillStyle = this.color;
+            ct.beginPath();
             ct.arc(center_x + (this.x + offset.x - center_x) * zoom,
                    center_y + (this.y + offset.y - center_y) * zoom,
                    this.radius * zoom, 0, 2*Math.PI);
@@ -124,18 +168,52 @@ class Body
             // Make sure this object is not the Sun -- it would eat itself!
             if (this.id != sun_id)
             {
+                var sun_dist = distance_to(this.x, this.y, bds[sun_id].x, bds[sun_id].y);
                 // If this body is inside of the Sun.
-                if (distance_to(this.x, this.y, bds[sun_id].x, bds[sun_id].y)
-                    < bds[sun_id].radius)
+                if (sun_dist < bds[sun_id].radius)
                 {
                     // The Sun will eat it.
                     bds[sun_id].eat(this.mass);
                     // We also basically "destroy" the body.
                     // This keeps it in the array for posterity.
-                    this.mass = 0;
-                    this.radius = 0;
-                    this.dynamic = false;
+                    this.die();
                 }
+                else if (sun_dist > MAX_DISTANCE)
+                {
+                    this.die();
+                }
+            }
+            
+            var dtosun = distance_fast(this.x, this.y, bds[sun_id].x, bds[sun_id].y);
+            this.pts_freq = Math.floor(dtosun / 1000) >> 3; // same as dividing by 8
+            this.pts_freq = this.pts_freq > MAX_PTS ? MAX_PTS : this.pts_freq;
+
+            // Determine if we need to handle points.
+            this.pts_trck++;
+            if (this.pts_trck >= this.pts_freq)
+            {
+                this.pts_trck = 0;
+
+                // Remove old entries if the array is too long.
+                if (this.pts.length > this.pts_maxn)
+                {
+                    this.pts.shift();
+                }
+
+                // Push the newest point.
+                this.pts.push( [this.x, this.y] );
+            }
+        }
+
+        if (this.dying)
+        {
+            if (this.pts.length > 0)
+            {
+                this.pts.shift();
+            }
+            else
+            {
+                this.dying = false;
             }
         }
     }
@@ -158,8 +236,8 @@ class Body
             // We find that:
             // mass1 * acceleration = G * mass1 * mass2 / distance^2 =>
             // acceleration = G * mass2 / distance^2
-            var dist = distance_to(this.x, this.y, bds[i].x, bds[i].y);
-            var denom = Math.pow(dist, 2);
+            // NOTE: the distance_fast function is already squared!
+            var denom = distance_fast(this.x, this.y, bds[i].x, bds[i].y);
             var accel = G * bds[i].mass / denom;
 
             // Now that we have acceleration, apply it to velocity vectors.
@@ -174,7 +252,8 @@ class Body
 
     @param m: mass to be eaten.
     */
-    eat(m){
+    eat(m)
+    {
         this.mass += m;
 
         // Radius is found using the density relationship:
@@ -188,86 +267,13 @@ class Body
         // +1 included to show the smallest objects as 1 pixel.
         this.radius = Math.pow(this.mass, 1/3) + 1;
     }
-}
 
-/**
-Meteor is a subclass of body. It uses members of Body, but has some of
-its own features. Also, we can use constants and call the super-class
-constructor. See below. 
-*/
-class Meteor extends Body
-{
-    constructor(x, y, vx, vy)
+    die()
     {
-        // Call the super-class constructor with constants.
-        super(x, y, METEOR_MASS, METEOR_COLOR, true, vx, vy, met_id);
-
-        // pts is an array of the past locations of this body.
-        this.pts = [ [x, y] ];
-        // pts_freq is how many ticks pass before saving a point.
-        this.pts_freq = 2;
-        this.pts_trck = 0;
-        // pts_maxn is the max number of points to hold.
-        this.pts_maxn = METEOR_MAXPTS;
-    }
-
-    /**
-    tick is called once per frame.
-    
-    @param dur: duration of previous frame.
-    @param bds: array of bodies.
-    */
-    tick(dur, bds)
-    {
-        // Call the super-class tick function
-        super.tick(dur, bds);
-
-        // Determine if we need to handle points.
-        this.pts_trck++;
-        if (this.pts_trck >= this.pts_freq)
-        {
-            this.pts_trck = 0;
-
-            // Remove old entries if the array is too long.
-            if (this.pts.length > this.pts_maxn)
-            {
-                this.pts.shift();
-            }
-
-            // Push the newest point.
-            this.pts.push( [this.x, this.y] );
-        }
-    }
-
-    /**
-    Draw this meteor.
-
-    @param ct: canvas context.
-    */
-    draw(ct)
-    {
-        // Make the pts trail the same color as the object.
-        ct.strokeStyle = this.color;
-               center_x + (this.x + offset.x - center_x) * zoom
-               center_y + (this.y + offset.y - center_y) * zoom
-        ct.moveTo(center_x + (this.pts[0][0] + offset.x - center_x) * zoom,
-                  center_y + (this.pts[0][1] + offset.y - center_y) * zoom);
-        ct.beginPath();
-
-        // Loop through all points, drawing short lines.
-        for (var i = 0; i < this.pts.length; i++){
-            ct.lineTo(center_x + (this.pts[i][0] + offset.x - center_x) * zoom,
-                      center_y + (this.pts[i][1] + offset.y - center_y) * zoom);
-            ct.moveTo(center_x + (this.pts[i][0] + offset.x - center_x) * zoom,
-                      center_y + (this.pts[i][1] + offset.y - center_y) * zoom);
-        }
-        ct.lineTo(center_x + (this.x + offset.x - center_x) * zoom,
-                  center_y + (this.y + offset.y - center_y) * zoom);
-        ct.stroke();
-        ct.closePath();
-        
-        // Finally, use the super-class draw function.
-        super.draw(ct);
+        this.mass = 0;
+        this.radius = 0;
+        this.dying = true;
+        this.dynamic = false;
     }
 }
 
@@ -397,12 +403,12 @@ var sun_id = 0;
 bodies.push(new Body(canvas.width/2, canvas.height/2, SUN_MASS, SUN_COLOR,
                      false, 0, 0, sun_id));
 // Add a meteor above the Sun.
-var met_id = 1;
-bodies.push(new Meteor(canvas.width/2, canvas.height/2 - METEOR_STARTDISTANCE,
-                       METEOR_STARTXVEL, METEOR_STARTYVEL));
+bodies.push(new Body(canvas.width/2, canvas.height/2 - METEOR_STARTDISTANCE,
+                     METEOR_MASS, METEOR_COLOR, true,
+                     METEOR_STARTXVEL, METEOR_STARTYVEL, bodies.length));
 
 // Create the "Dynamic Sun" Button.
-var btn = new Button(44, 34, 60, 40, "Dynamic Sun", ACTIVE_COLOR, "14px Verdana");
+var btn = new Button(44, 34, BTN_WIDTH, BTN_HEIGHT, "Dynamic Sun", ACTIVE_COLOR, "14px Verdana");
 btn.action = function()
 {
     // When clicked, toggle the status of the dynamic Sun.
@@ -424,7 +430,7 @@ btn.tick = function()
 buttons.push(btn);
 
 // Similar to above procedure. Add "Move" Button.
-btn = new Button(44, 78, 60, 40, "Move", ACTIVE_COLOR, "14px Verdana");
+btn = new Button(44, 78, BTN_WIDTH, BTN_HEIGHT, "Move", ACTIVE_COLOR, "14px Verdana");
 btn.action = function()
 {
     click_mode = "move";
@@ -443,7 +449,7 @@ btn.tick = function()
 buttons.push(btn);
 
 // Similar to above procedure. Add "Zoom" Button.
-btn = new Button(44, 122, 60, 40, "Zoom", ACTIVE_COLOR, "14px Verdana");
+btn = new Button(44, 122, BTN_WIDTH, BTN_HEIGHT, "Zoom", ACTIVE_COLOR, "14px Verdana");
 btn.action = function()
 {
     click_mode = "zoom";
@@ -462,7 +468,7 @@ btn.tick = function()
 buttons.push(btn);
 
 // Again, similar. Add "Spawn" Button.
-btn = new Button(44, 166, 60, 40, "Spawn", ACTIVE_COLOR, "14px Verdana");
+btn = new Button(44, 166, BTN_WIDTH, BTN_HEIGHT, "Spawn", ACTIVE_COLOR, "14px Verdana");
 btn.action = function()
 {
     click_mode = "spawn";
@@ -601,7 +607,7 @@ canvas.addEventListener("mouseup", function(evt)
     lmousedown = false;
 
     // If the release was in the button zone.
-    if (evt.x < 100 && evt.y < 260)
+    if (evt.x < MENU_WIDTH && evt.y < MENU_HEIGHT)
     {
         return;
     }
@@ -748,10 +754,11 @@ Draw paths for user's convenience.
 */
 function draw_spawn_path()
 {
-    if (lmousedown && click_mode == "spawn")
+    if (lmousedown && click_mode == "spawn" && (lmousecurx > MENU_WIDTH || lmousecury > MENU_HEIGHT))
     {
         // This represents the velocity vector of a new planet.
         ctx.strokeStyle = "white";
+        ctx.beginPath();
         ctx.moveTo(lmouselastx, lmouselasty);
         ctx.lineTo(lmousecurx, lmousecury);
         ctx.stroke();
@@ -759,9 +766,8 @@ function draw_spawn_path()
 
         // This is the intended trajectory of the newly spawned planet.
         var mpts = [ [lmouselastx, lmouselasty] ];
-        // TODO - why does this factor need to be here? -->\/ and here ->\/
-        var vx = (lmousecurx - lmouselastx)*CLICKVELFACTOR*5.75 / zoom**(1.5);
-        var vy = (lmousecury - lmouselasty)*CLICKVELFACTOR*5.75 / zoom**(1.5);
+        var vx = (lmousecurx - lmouselastx)*CLICKVELFACTOR / zoom**1.5;
+        var vy = (lmousecury - lmouselasty)*CLICKVELFACTOR / zoom**1.5;
         var mx = lmouselastx;
         var my = lmouselasty;
 
@@ -769,8 +775,8 @@ function draw_spawn_path()
         for (var i = 0; i < 2000; i++)
         {
             // Add velocity
-            mx += vx;
-            my += vy;
+            mx += vx * UPDATE_RATE;
+            my += vy * UPDATE_RATE;
             mpts.push( [mx, my] );
 
             var sun = bodies[sun_id];
@@ -806,4 +812,15 @@ Calculate the distance between two pairs of points.
 function distance_to(x1, y1, x2, y2)
 {
     return Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+}
+
+/**
+Calculate the distance between two pairs of points fast! No sqrt calculation.
+
+@param {x1, y1}: location of first point.
+@param {x2, y2}: location of second point.
+*/
+function distance_fast(x1, y1, x2, y2)
+{
+    return (x2-x1)**2 + (y2-y1)**2;
 }
