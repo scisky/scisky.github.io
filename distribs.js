@@ -2,7 +2,8 @@
 // Last modified September 26, 2019
 
 const UPDATE_RATE = 1000/60;
-const BGCOLOR = "#aaaaaa";
+const BGCOLOR = "#111111";
+const TXTCOLOR = "#ffffff";
 
 var fontSize = 30;
 
@@ -97,7 +98,7 @@ function DrawRandomNumbers()
     let gIndex = (randVal - 0.5) * Math.PI;
     let gVal = Math.tan(gIndex);
     
-    ctx.fillStyle = "black";
+    ctx.fillStyle = TXTCOLOR;
     ctx.fillText("Uniform:", 100, 170);
     ctx.fillText("" + randVal, 100, 200);
     
@@ -109,8 +110,8 @@ function DrawRandomNumbers()
     ctx.fillText("Gaussian Index = (Uniform - 0.5) * \u03D6", 100, 600);
     ctx.fillText("Gaussian = Tangent(Gaussian Index)", 100, 640);
     
-    ctx.fillText("Uniform Distribution", canvas.width/2, 70);
-    ctx.fillText("Gaussian/Normal Distribution", canvas.width/2, 370);
+    ctx.fillText("Uniform Distribution", 600, 70);
+    ctx.fillText("Gaussian/Normal Distribution", 600, 370);
     
     // Add to Uniform Histogram
     let uniStep = (uniMax - uniMin)/uniBins;
@@ -126,22 +127,22 @@ function DrawRandomNumbers()
             }
         }
         
-        ctx.fillStyle = "black";
-        ctx.fillRect(canvas.width/2 + i*10, 200, 1, 2);
+        ctx.fillStyle = TXTCOLOR;
+        ctx.fillRect(600 + i*10, 200, 1, 2);
         ctx.fillStyle = "blue";
-        ctx.fillRect(canvas.width/2 + i*10, 200, 10, -100*(uniHisto[i]/uniMaxVal));
+        ctx.fillRect(600 + i*10, 200, 10, -100*(uniHisto[i]/uniMaxVal));
     }
     
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = TXTCOLOR;
     ctx.setLineDash([5, 5]);/*dashes are 5px and spaces are 3px*/
     ctx.beginPath();
-    ctx.moveTo(canvas.width/2, 100);
-    ctx.lineTo(canvas.width/2 + uniBins*10, 100);
+    ctx.moveTo(600, 100);
+    ctx.lineTo(600 + uniBins*10, 100);
     ctx.stroke();
-    ctx.fillStyle = "black";
-    ctx.fillText("" + uniMaxVal, canvas.width/2 - 60, 110);
-    ctx.fillText("" + uniMin, canvas.width/2 - 10, 230);
-    ctx.fillText("" + uniMax, canvas.width/2 + uniBins*10 - 20, 230);
+    ctx.fillStyle = TXTCOLOR;
+    ctx.fillText("" + uniMaxVal, 600 - 60, 110);
+    ctx.fillText("" + uniMin, 600 - 10, 230);
+    ctx.fillText("" + uniMax, 600 + uniBins*10 - 20, 230);
     
     // Add to Gaussian Histogram
     let gStep = (gMax - gMin)/gBins;
@@ -157,22 +158,22 @@ function DrawRandomNumbers()
             }
         }
         
-        ctx.fillStyle = "black";
-        ctx.fillRect(canvas.width/2 + i*10, 500, 1, 2);
+        ctx.fillStyle = TXTCOLOR;
+        ctx.fillRect(600 + i*10, 500, 1, 2);
         ctx.fillStyle = "blue";
-        ctx.fillRect(canvas.width/2 + i*10, 500, 10, -100*(gHisto[i]/gMaxVal));
+        ctx.fillRect(600 + i*10, 500, 10, -100*(gHisto[i]/gMaxVal));
     }
     
-    ctx.strokeStyle = "black";
+    ctx.strokeStyle = TXTCOLOR;
     ctx.setLineDash([5, 5]);/*dashes are 5px and spaces are 3px*/
     ctx.beginPath();
-    ctx.moveTo(canvas.width/2, 400);
-    ctx.lineTo(canvas.width/2 + gBins*10, 400);
+    ctx.moveTo(600, 400);
+    ctx.lineTo(600 + gBins*10, 400);
     ctx.stroke();
-    ctx.fillStyle = "black";
-    ctx.fillText("" + gMaxVal, canvas.width/2 - 60, 410);
-    ctx.fillText("" + gMin, canvas.width/2 - 10, 530);
-    ctx.fillText("" + gMax, canvas.width/2 + gBins*10 - 30, 530);
+    ctx.fillStyle = TXTCOLOR;
+    ctx.fillText("" + gMaxVal, 600 - 60, 410);
+    ctx.fillText("" + gMin, 600 - 10, 530);
+    ctx.fillText("" + gMax, 600 + gBins*10 - 30, 530);
 }
 
 function update()
@@ -184,7 +185,7 @@ function update()
             ctx.fillStyle = BGCOLOR;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = "black";
+            ctx.fillStyle = TXTCOLOR;
             ctx.fillText("Hold Space Bar to pause", 80, 40);
             
             ctx.fillStyle = "green";
